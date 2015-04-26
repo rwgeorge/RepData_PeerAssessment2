@@ -1,0 +1,128 @@
+---
+title: "Reproducible Research Peer Assessment 2: Health and Economic Effects of Different Types of Severe Weather on United States (1950-2011)"
+author: "https://github.com/rwgeorge/RepData_PeerAssessment2"
+date: "04/26/2015"
+output: html_document
+keep_md: true
+---
+
+##Synopsis
+
+This study was an examination of NOAA health and ecenomic data for the United States from 1950 to 2011.
+
+Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.
+
+This project involves exploring the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.
+
+
+1.  Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+
+2.  Across the United States, which types of events have the greatest economic consequences?
+
+
+####Results:
+
+ **Tornadoes** cause the most health damage while **floods** cause the most ecenomic harm. 
+
+##Data Processing
+
+The data for this assignment come in the form of a comma-separated-value file compressed via the bzip2 algorithm to reduce its size. You can download the file from the course web site:
+
+[Storm Data (47MB)](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
+There is also some documentation of the database available. Here you will find how some of the variables are constructed/defined.
+
+[National Weather Service Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+
+[National Climatic Data Center Storm Events FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
+
+The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. More recent years should be considered more complete.
+
+### Basic Setup
+
+#### Libraries
+
+This assignment solution makes use of the following R packages:
+
+* **knitr**: Used to "knit" this R Markdown file
+* **dplyr**: Used for general data set manipulation
+* **tidyr**: Used for general data cleaning
+* **lubridate**: Used to make working with dates and times easy
+* **ggplot2**: Used for plotting
+
+```{r setup, echo = TRUE, results = "hide", message = FALSE}
+library("knitr")
+library("dplyr")
+library("tidyr")
+library("ggplot2")
+```
+
+No initial modification was made to the data besides converting it into a dplyr data frame for easier analysis.
+
+#### Loading & Preprocessing the Data
+
+The data needs to be in the working directory for the R code to run properly.
+This is automatic if the Github fork was used.  If the data is not in the working
+directory, the script will attempt to download it.
+
+#### Download the Data
+
+```{r downloading, echo = TRUE, cache = TRUE}
+fileLocation <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+fileName <- "Data.csv.bz2"
+if (!file.exists(fileName))
+  download.file(fileLocation, fileName, method = "curl")
+  
+fileDate <- format(file.info(fileName)$mtime, "%B %d, %Y at %H:%M:%S")
+```
+**`r fileName`** obtained on **`r fileDate`**.
+
+### Data Processing
+
+#### Read Raw Data
+```{r reading, echo = TRUE, cached = TRUE}
+rawData <- tbl_df(read.csv(fileName))
+```
+
+#### Analysis
+
+For heath related events, the top event was determined and plotted.
+
+```{r analysis, echo = TRUE, cache = TRUE}
+healthEvents <- select(rawData, one_of(c("EVTYPE", "FATALITIES", "INJURIES")))
+healthEvents <- group_by(healthEvents, EVTYPE)
+healthEvents <- summarise(healthEvents, FATALITIES = sum(FATALITIES), INJURIES = sum(INJURIES))
+
+topEvents <- top_n(healthEvents, 10)
+
+top10 <- top_n(healthEvents, 10)
+```
+Top health events:
+
+As can be seen, TORNADO is the top event for both injuries and fatalities.
+
+```{r histogram_healthEvents}
+qplot(top10$EVTYPE, geom="histogram")
+```
+
+For ecenomic events, the top ecenomic event was determined and plotted.
+
+```{r analysis2, echo = TRUE, cache = TRUE}
+ecenomicEvents <- select(rawData, one_of(c("EVTYPE", "PROPDMG", "CROPDMG")))
+ecenomicEvents <- group_by(ecenomicEvents, EVTYPE)
+ecenomicEvents <- summarise(ecenomicEvents, PROPDMG = sum(PROPDMG), CROPDMG = sum(CROPDMG))
+
+topEcenomicEvents <- top_n(ecenomicEvents, 10)
+
+top10ecenomic <- top_n(ecenomicEvents, 10)
+```
+Top ecenomic events:
+
+As can be seen, FLOODS is the top event for ecenomic harm.
+
+```{r histogram_ecenomicEvents}
+qplot(top10ecenomic$EVTYPE, geom="histogram")
+```
+
+### Results
+**Tornadoes** cause the most health damage while **floods** cause the most ecenomic harm.
+
